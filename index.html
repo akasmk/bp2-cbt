@@ -1,0 +1,588 @@
+HTML
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBT AKM Kemendikbud Style (Secured)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    /* Mencegah seleksi teks saat ujian */
+    .no-select {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased text-gray-800 min-h-screen no-select">
+
+  <!-- NAVBAR -->
+  <header class="bg-blue-800 text-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <div class="bg-yellow-400 p-2 rounded-lg font-bold text-blue-900">AKM</div>
+        <h1 class="text-xl font-bold tracking-wide">CBT SIMULASI ASESMEN</h1>
+      </div>
+      <div id="user-info" class="hidden text-sm flex items-center gap-4">
+        <span><i class="fa-solid fa-user mr-1"></i> <strong id="nav-nama">-</strong></span>
+        <button onclick="logout()" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs font-semibold">Keluar</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-4">
+
+    <!-- VIEW 1: LOGIN -->
+    <section id="view-login" class="max-w-md mx-auto mt-12 bg-white p-6 rounded-xl shadow-lg">
+      <h2 class="text-2xl font-bold text-center text-blue-900 mb-6">Login Peserta Ujian</h2>
+      <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold mb-1">Username</label>
+          <input type="text" id="login-username" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-600 outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1">Password</label>
+          <input type="password" id="login-password" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-600 outline-none">
+        </div>
+        <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 rounded-lg transition">Masuk Ujian</button>
+      </form>
+      <div class="mt-4 text-center border-t pt-3">
+        <button onclick="switchView('view-admin-login')" class="text-xs text-blue-600 hover:underline">Login Proktor / Admin</button>
+      </div>
+    </section>
+
+    <!-- VIEW ADMIN LOGIN -->
+    <section id="view-admin-login" class="hidden max-w-md mx-auto mt-12 bg-white p-6 rounded-xl shadow-lg">
+      <h2 class="text-xl font-bold text-center text-gray-800 mb-4">Login Proktor / Admin</h2>
+      <div class="space-y-4">
+        <input type="password" id="admin-pass" placeholder="Password Admin" class="w-full px-3 py-2 border rounded-lg outline-none">
+        <button onclick="handleAdminLogin()" class="w-full bg-gray-800 text-white font-bold py-2 rounded-lg">Masuk Dashboard</button>
+        <button onclick="switchView('view-login')" class="w-full text-sm text-gray-500">Kembali ke Login Peserta</button>
+      </div>
+    </section>
+
+    <!-- VIEW 2: KONFIRMASI DATA -->
+    <section id="view-konfirmasi" class="hidden max-w-lg mx-auto mt-10 bg-white p-6 rounded-xl shadow-lg space-y-4">
+      <h2 class="text-xl font-bold border-b pb-2 text-blue-900">Konfirmasi Data Peserta</h2>
+      <div class="space-y-2 text-sm">
+        <p><strong>Nama:</strong> <span id="konf-nama"></span></p>
+        <p><strong>Status:</strong> <span id="konf-status" class="text-green-600 font-bold"></span></p>
+      </div>
+      <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-xs text-yellow-800 rounded">
+        <p class="font-bold mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Peraturan Keamanan Ujian:</p>
+        <ul class="list-disc pl-4 space-y-1">
+          <li>Layar akan otomatis berpindah ke mode Fullscreen.</li>
+          <li>Dilarang berpindah tab, membuka aplikasi lain, atau keluar fullscreen.</li>
+          <li>Pelanggaran maksimal <strong>3x</strong> akan mengakibatkan ujian di-submit otomatis.</li>
+        </ul>
+      </div>
+      <div class="border-t pt-4">
+        <label class="block text-sm font-semibold mb-1">Masukkan Token Ujian:</label>
+        <input type="text" id="input-token" class="w-full px-3 py-2 border rounded-lg mb-4 uppercase tracking-widest font-bold">
+        <button onclick="mulaiUjian()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg">Mulai Mengerjakan</button>
+      </div>
+    </section>
+
+    <!-- VIEW 3: PANEL UJIAN (AKM STYLE) -->
+    <section id="view-ujian" class="hidden space-y-4">
+      <!-- HEADER UJIAN -->
+      <div class="bg-white p-4 rounded-xl shadow flex justify-between items-center">
+        <div>
+          <span class="text-xs text-gray-500 block">SISA WAKTU</span>
+          <span id="timer" class="text-2xl font-mono font-bold text-red-600">00:00:00</span>
+        </div>
+        <!-- CHEATING COUNTER BADGE -->
+        <div class="bg-red-100 border border-red-300 text-red-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Pelanggaran: <strong id="cheat-count" class="text-sm">0</strong>/3</span>
+        </div>
+        <button onclick="toggleGridModal()" class="bg-blue-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+          <i class="fa-solid fa-th mr-1"></i> Daftar Soal
+        </button>
+      </div>
+
+      <!-- WORKSPACE SOAL -->
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <!-- AREA SOAL (3 Col) -->
+        <div class="lg:col-span-3 bg-white p-6 rounded-xl shadow space-y-4 min-h-[400px]">
+          <div class="flex justify-between items-center border-b pb-3">
+            <span class="font-bold text-lg text-blue-900">Soal No. <span id="soal-nomor">1</span></span>
+            <span id="soal-jenis-badge" class="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded font-bold">PG</span>
+          </div>
+
+          <!-- Stimulus -->
+          <div id="soal-stimulus" class="text-sm bg-gray-50 p-3 rounded border hidden"></div>
+
+          <!-- Pertanyaan -->
+          <div id="soal-pertanyaan" class="text-base font-medium"></div>
+
+          <!-- Opsi Jawaban -->
+          <div id="soal-opsi-container" class="space-y-2 pt-4"></div>
+        </div>
+
+        <!-- NAVIGASI MINI GRID -->
+        <div class="hidden lg:block bg-white p-4 rounded-xl shadow">
+          <h3 class="font-bold text-sm mb-3">Navigasi Soal</h3>
+          <div id="grid-soal-desktop" class="grid grid-cols-5 gap-2"></div>
+        </div>
+      </div>
+
+      <!-- FOOTER NAVIGASI -->
+      <div class="bg-white p-4 rounded-xl shadow flex justify-between items-center">
+        <button onclick="navSoal(-1)" id="btn-prev" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">Sebelumnya</button>
+        <label class="flex items-center space-x-2 bg-yellow-100 border border-yellow-400 px-3 py-2 rounded-lg cursor-pointer">
+          <input type="checkbox" id="check-ragu" onchange="toggleRagu()" class="w-4 h-4 text-yellow-600">
+          <span class="text-xs font-bold text-yellow-800">Ragu-Ragu</span>
+        </label>
+        <button onclick="navSoal(1)" id="btn-next" class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm font-semibold">Berikutnya</button>
+        <button onclick="konfirmasiSelesai()" id="btn-selesai" class="hidden bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">Selesai Ujian</button>
+      </div>
+    </section>
+
+    <!-- VIEW 4: DASHBOARD ADMIN -->
+    <section id="view-admin" class="hidden space-y-6">
+      <div class="bg-white p-4 rounded-xl shadow flex justify-between items-center">
+        <h2 class="text-xl font-bold">Dashboard Proktor / Admin</h2>
+        <button onclick="switchView('view-login')" class="bg-red-600 text-white text-xs px-3 py-1.5 rounded">Keluar Admin</button>
+      </div>
+
+      <!-- SETTING PANEL -->
+      <div class="bg-white p-4 rounded-xl shadow grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-bold mb-1">Token Ujian</label>
+          <input type="text" id="admin-token" class="border px-3 py-1.5 rounded w-full font-bold">
+        </div>
+        <div>
+          <label class="block text-xs font-bold mb-1">Durasi (Menit)</label>
+          <input type="number" id="admin-durasi" class="border px-3 py-1.5 rounded w-full">
+        </div>
+        <div class="flex items-end">
+          <button onclick="savePengaturan()" class="bg-blue-700 text-white px-4 py-2 rounded font-bold w-full">Simpan Pengaturan</button>
+        </div>
+      </div>
+
+      <!-- PESERTA TABLE -->
+      <div class="bg-white p-4 rounded-xl shadow space-y-3">
+        <h3 class="font-bold text-md">Status Peserta & Log Pelanggaran</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left border">
+            <thead class="bg-gray-100 border-b">
+              <tr>
+                <th class="p-2">ID</th>
+                <th class="p-2">Nama</th>
+                <th class="p-2">Status</th>
+                <th class="p-2">Pelanggaran</th>
+                <th class="p-2">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="table-peserta-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // --- MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI ---
+    const API_URL = "https://script.google.com/macros/s/AKfycbzEhlxlhsstMCG8lulQ2EONmWPr-J0MroYTuQU2FJ6qC5NU-kyJ-Va_jMdG9932ZAA/exec";
+
+    let currentUser = null;
+    let daftarSoal = [];
+    let currentIndex = 0;
+    let jawabanUser = {};
+    let statusRagu = {};
+    let timerInterval = null;
+    let sisaWaktu = 0;
+    
+    // ANTI-CHEATING STATE
+    let jumlahPelanggaran = 0;
+    const MAX_PELANGGARAN = 3;
+    let isUjianActive = false;
+
+    // ROUTER
+    function switchView(viewId) {
+      ['view-login', 'view-admin-login', 'view-konfirmasi', 'view-ujian', 'view-admin'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      document.getElementById(viewId).classList.remove('hidden');
+    }
+
+    // API HELPER
+    async function apiRequest(action, method = 'GET', payload = null) {
+      try {
+        if (method === 'GET') {
+          const res = await fetch(`${API_URL}?action=${action}`);
+          return await res.json();
+        } else {
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action, ...payload })
+          });
+          return await res.json();
+        }
+      } catch (err) {
+        console.error("Gagal terhubung ke API Server!", err);
+      }
+    }
+
+    // AUTHENTICATION
+    async function handleLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('login-username').value;
+      const p = document.getElementById('login-password').value;
+
+      const res = await apiRequest('login', 'POST', { username: u, password: p });
+      if (res && res.status === 'success') {
+        currentUser = res.peserta;
+        jumlahPelanggaran = currentUser.pelanggaran || 0;
+        
+        if (currentUser.status === 'Ditermina (Curang)') {
+          alert("Akses Ujian Anda Dibatalkan karena terdeteksi melakukan kecurangan!");
+          return;
+        }
+
+        document.getElementById('nav-nama').innerText = currentUser.nama;
+        document.getElementById('user-info').classList.remove('hidden');
+        document.getElementById('konf-nama').innerText = currentUser.nama;
+        document.getElementById('konf-status').innerText = currentUser.status;
+        switchView('view-konfirmasi');
+      } else {
+        alert(res ? res.message : "Gagal Login");
+      }
+    }
+
+    async function mulaiUjian() {
+      const inputToken = document.getElementById('input-token').value.toUpperCase();
+      const config = await apiRequest('get_pengaturan');
+
+      if (inputToken !== config.token) {
+        alert("Token Ujian Salah!");
+        return;
+      }
+
+      daftarSoal = await apiRequest('get_soal');
+      sisaWaktu = currentUser.sisa_waktu || (config.durasi * 60);
+
+      switchView('view-ujian');
+      renderSoal();
+      renderGrid();
+      startTimer();
+
+      // Aktifkan Engine Keamanan
+      isUjianActive = true;
+      requestFullscreen();
+      initAntiCheatingEngine();
+
+      apiRequest('update_status', 'POST', { id_peserta: currentUser.id, status: 'Sedang Mengerjakan' });
+    }
+
+    // ===================================================
+    // MODULE: ANTI-CHEATING ENGINE
+    // ===================================================
+    function initAntiCheatingEngine() {
+      // 1. Blokir Copy, Paste, Cut, Right Click
+      document.addEventListener('copy', preventAction);
+      document.addEventListener('paste', preventAction);
+      document.addEventListener('cut', preventAction);
+      document.addEventListener('contextmenu', preventAction);
+
+      // 2. Blokir Shortcut Keyboard (F12, Ctrl+U, Ctrl+C, Ctrl+V, Alt+Tab, dll)
+      document.addEventListener('keydown', (e) => {
+        if (!isUjianActive) return;
+
+        // F12 atau Ctrl+Shift+I (DevTools)
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+          e.preventDefault();
+          catatPelanggaran("Membuka Developer Tools");
+        }
+        // Ctrl+C / Ctrl+V / Ctrl+U
+        if (e.ctrlKey && ['c', 'v', 'u', 'a', 'p'].includes(e.key.toLowerCase())) {
+          e.preventDefault();
+        }
+      });
+
+      // 3. Detect Tab Switching / App Focus Blur
+      window.addEventListener('blur', () => {
+        if (isUjianActive) {
+          catatPelanggaran("Meninggalkan Halaman Ujian / Buka Tab Lain");
+        }
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (isUjianActive && document.hidden) {
+          catatPelanggaran("Meninggalkan Tab Browser");
+        }
+      });
+
+      // 4. Detect Exit Fullscreen
+      document.addEventListener('fullscreenchange', handleFullscreenChange);
+      document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    }
+
+    function preventAction(e) {
+      if (isUjianActive) {
+        e.preventDefault();
+        alert("Aksi ini dilarang selama ujian berlangsung!");
+      }
+    }
+
+    function requestFullscreen() {
+      const elem = document.documentElement;
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(() => {});
+      } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+      }
+    }
+
+    function handleFullscreenChange() {
+      const isFull = document.fullscreenElement || document.webkitFullscreenElement;
+      if (isUjianActive && !isFull) {
+        catatPelanggaran("Keluar dari Mode Fullscreen");
+      }
+    }
+
+    function catatPelanggaran(alasan) {
+      if (!isUjianActive) return;
+
+      jumlahPelanggaran++;
+      document.getElementById('cheat-count').innerText = jumlahPelanggaran;
+
+      // Sync Log Ke Server
+      apiRequest('update_status', 'POST', { 
+        id_peserta: currentUser.id, 
+        pelanggaran: jumlahPelanggaran 
+      });
+
+      if (jumlahPelanggaran >= MAX_PELANGGARAN) {
+        isUjianActive = false;
+        alert(`PERINGATAN TERAKHIR!\n\nAnda telah melanggar aturan ujian 3 kali (${alasan}).\nSistem mengakhiri ujian Anda secara otomatis!`);
+        submitUjian('Ditermina (Curang)');
+      } else {
+        alert(`PERINGATAN PELANGGARAN (${jumlahPelanggaran}/${MAX_PELANGGARAN})!\n\nAlasan: ${alasan}.\nDilarang berpindah aplikasi/tab atau keluar dari layar penuh!`);
+        requestFullscreen(); // Kembalikan ke Fullscreen
+      }
+    }
+
+    // ENGINE UJIAN
+    function renderSoal() {
+      const soal = daftarSoal[currentIndex];
+      document.getElementById('soal-nomor').innerText = currentIndex + 1;
+      document.getElementById('soal-jenis-badge').innerText = soal.jenis;
+
+      const stimEl = document.getElementById('soal-stimulus');
+      if (soal.stimulus && soal.stimulus !== '-') {
+        stimEl.innerHTML = soal.stimulus;
+        stimEl.classList.remove('hidden');
+      } else {
+        stimEl.classList.add('hidden');
+      }
+
+      document.getElementById('soal-pertanyaan').innerText = soal.pertanyaan;
+
+      const container = document.getElementById('soal-opsi-container');
+      container.innerHTML = '';
+
+      const currentAns = jawabanUser[soal.id];
+
+      if (soal.jenis === 'PG') {
+        soal.opsi.forEach(opsi => {
+          const checked = currentAns === opsi ? 'checked' : '';
+          container.innerHTML += `
+            <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+              <input type="radio" name="opsi" value="${opsi}" ${checked} onchange="saveJawaban('${soal.id}', '${opsi}')" class="w-4 h-4 text-blue-600">
+              <span class="text-sm">${opsi}</span>
+            </label>`;
+        });
+      } else if (soal.jenis === 'PGK') {
+        const arrAns = Array.isArray(currentAns) ? currentAns : [];
+        soal.opsi.forEach(opsi => {
+          const checked = arrAns.includes(opsi) ? 'checked' : '';
+          container.innerHTML += `
+            <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+              <input type="checkbox" value="${opsi}" ${checked} onchange="saveJawabanPGK('${soal.id}', '${opsi}')" class="w-4 h-4 text-blue-600">
+              <span class="text-sm">${opsi}</span>
+            </label>`;
+        });
+      } else if (soal.jenis === 'ISIAN' || soal.jenis === 'URAIAN') {
+        const val = currentAns || '';
+        container.innerHTML = `
+          <textarea onchange="saveJawaban('${soal.id}', this.value)" class="w-full border p-2 rounded-lg" rows="4" placeholder="Tuliskan jawaban Anda...">${val}</textarea>`;
+      }
+
+      document.getElementById('check-ragu').checked = !!statusRagu[soal.id];
+
+      document.getElementById('btn-prev').style.visibility = currentIndex === 0 ? 'hidden' : 'visible';
+      if (currentIndex === daftarSoal.length - 1) {
+        document.getElementById('btn-next').classList.add('hidden');
+        document.getElementById('btn-selesai').classList.remove('hidden');
+      } else {
+        document.getElementById('btn-next').classList.remove('hidden');
+        document.getElementById('btn-selesai').classList.add('hidden');
+      }
+    }
+
+    function saveJawaban(idSoal, val) {
+      jawabanUser[idSoal] = val;
+      renderGrid();
+    }
+
+    function saveJawabanPGK(idSoal, val) {
+      if (!Array.isArray(jawabanUser[idSoal])) jawabanUser[idSoal] = [];
+      const index = jawabanUser[idSoal].indexOf(val);
+      if (index > -1) {
+        jawabanUser[idSoal].splice(index, 1);
+      } else {
+        jawabanUser[idSoal].push(val);
+      }
+      renderGrid();
+    }
+
+    function toggleRagu() {
+      const soalId = daftarSoal[currentIndex].id;
+      statusRagu[soalId] = document.getElementById('check-ragu').checked;
+      renderGrid();
+    }
+
+    function navSoal(dir) {
+      currentIndex += dir;
+      renderSoal();
+    }
+
+    function renderGrid() {
+      const el = document.getElementById('grid-soal-desktop');
+      el.innerHTML = '';
+      daftarSoal.forEach((s, idx) => {
+        const answered = jawabanUser[s.id] && jawabanUser[s.id].length > 0;
+        const isRagu = statusRagu[s.id];
+        
+        let bg = 'bg-gray-200 text-gray-700';
+        if (isRagu) bg = 'bg-yellow-400 text-white';
+        else if (answered) bg = 'bg-blue-700 text-white';
+
+        const activeBorder = currentIndex === idx ? 'ring-2 ring-offset-1 ring-blue-900' : '';
+
+        el.innerHTML += `
+          <button onclick="jumpToSoal(${idx})" class="h-10 text-xs font-bold rounded flex items-center justify-center ${bg} ${activeBorder}">
+            ${idx + 1}
+          </button>`;
+      });
+    }
+
+    function jumpToSoal(idx) {
+      currentIndex = idx;
+      renderSoal();
+    }
+
+    // TIMER ENGINE
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        sisaWaktu--;
+        
+        const h = Math.floor(sisaWaktu / 3600).toString().padStart(2, '0');
+        const m = Math.floor((sisaWaktu % 3600) / 60).toString().padStart(2, '0');
+        const s = (sisaWaktu % 60).toString().padStart(2, '0');
+        document.getElementById('timer').innerText = `${h}:${m}:${s}`;
+
+        // Sync berkala
+        if (sisaWaktu % 30 === 0) {
+          apiRequest('update_status', 'POST', { id_peserta: currentUser.id, sisa_waktu: sisaWaktu });
+        }
+
+        if (sisaWaktu <= 0) {
+          clearInterval(timerInterval);
+          alert("Waktu ujian telah habis!");
+          submitUjian('Selesai');
+        }
+      }, 1000);
+    }
+
+    function konfirmasiSelesai() {
+      if (confirm("Apakah Anda yakin ingin menyelesaikan ujian ini? Jawaban tidak dapat diubah lagi.")) {
+        submitUjian('Selesai');
+      }
+    }
+
+    async function submitUjian(statusAkhir = 'Selesai') {
+      isUjianActive = false;
+      clearInterval(timerInterval);
+      
+      const payloadJawaban = Object.keys(jawabanUser).map(key => ({
+        id_soal: key,
+        jawaban_user: Array.isArray(jawabanUser[key]) ? jawabanUser[key].join(',') : jawabanUser[key]
+      }));
+
+      const res = await apiRequest('submit_jawaban', 'POST', {
+        id_peserta: currentUser.id,
+        jawaban: payloadJawaban,
+        status_akhir: statusAkhir,
+        pelanggaran: jumlahPelanggaran
+      });
+
+      if (res && res.status === 'success') {
+        alert("Ujian Selesai! Terima kasih.");
+        location.reload();
+      }
+    }
+
+    // ADMIN CONTROLLER
+    async function handleAdminLogin() {
+      const p = document.getElementById('admin-pass').value;
+      if (p === 'admin123') {
+        switchView('view-admin');
+        loadAdminData();
+      } else {
+        alert('Password Admin Salah!');
+      }
+    }
+
+    async function loadAdminData() {
+      const config = await apiRequest('get_pengaturan');
+      document.getElementById('admin-token').value = config.token;
+      document.getElementById('admin-durasi').value = config.durasi;
+
+      const peserta = await apiRequest('get_peserta');
+      const tbody = document.getElementById('table-peserta-body');
+      tbody.innerHTML = '';
+      peserta.forEach(p => {
+        const badgeColor = p.status === 'Selesai' ? 'bg-green-600' : (p.status === 'Ditermina (Curang)' ? 'bg-red-600' : 'bg-yellow-600');
+        tbody.innerHTML += `
+          <tr class="border-b">
+            <td class="p-2">${p.id}</td>
+            <td class="p-2 font-bold">${p.nama}</td>
+            <td class="p-2"><span class="px-2 py-0.5 rounded text-xs text-white ${badgeColor}">${p.status}</span></td>
+            <td class="p-2 text-center font-bold text-red-600">${p.pelanggaran || 0}</td>
+            <td class="p-2">
+              <button onclick="resetPeserta('${p.id}')" class="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded">Reset Login</button>
+            </td>
+          </tr>`;
+      });
+    }
+
+    async function savePengaturan() {
+      const token = document.getElementById('admin-token').value;
+      const durasi = document.getElementById('admin-durasi').value;
+      await apiRequest('update_pengaturan', 'POST', { token, durasi });
+      alert("Pengaturan Berhasil Disimpan!");
+    }
+
+    async function resetPeserta(id) {
+      if(confirm('Reset status ujian dan statistik pelanggaran peserta ini?')) {
+        await apiRequest('reset_peserta', 'POST', { id_peserta: id });
+        loadAdminData();
+      }
+    }
+
+    function logout() {
+      location.reload();
+    }
+  </script>
+</body>
+</html>
+
